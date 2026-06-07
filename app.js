@@ -259,6 +259,8 @@ async function handleScanSuccess(decodedText) {
 function stopScanner() {
     els.btnScanOcr.classList.remove('hidden');
     els.btnStopScan.classList.add('hidden');
+    const existingCaptureBtn = document.getElementById('capture-btn');
+    if (existingCaptureBtn) existingCaptureBtn.remove();
 }
 
 els.btnStopScan.addEventListener('click', stopScanner);
@@ -274,6 +276,8 @@ async function startOCR(mode = 'full') {
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.style.width = '100%';
+    video.style.height = '300px'; // 縦幅を狭く固定
+    video.style.objectFit = 'cover'; // 枠に合わせてはみ出した部分を隠す
     video.style.display = 'block';
     
     // UI枠用コンテナ
@@ -281,15 +285,16 @@ async function startOCR(mode = 'full') {
     wrapper.style.position = 'relative';
     wrapper.style.width = '100%';
     wrapper.style.backgroundColor = '#000';
-    wrapper.style.overflow = 'hidden'; // 影がボタンにはみ出すのを防ぐ
+    wrapper.style.overflow = 'hidden'; // 影がはみ出すのを防ぐ
     
-    // 読み取りガイド枠 (中央横長) - 範囲を少し狭める
+    // 読み取りガイド枠 (中央横長)
     const guide = document.createElement('div');
     guide.style.position = 'absolute';
-    guide.style.top = '38%'; // 上から
-    guide.style.left = '10%';
-    guide.style.width = '80%';
-    guide.style.height = '24%'; // 縦幅
+    guide.style.top = '50%'; 
+    guide.style.left = '50%';
+    guide.style.transform = 'translate(-50%, -50%)';
+    guide.style.width = '85%';
+    guide.style.height = '120px'; // バーコードに最適な高さ
     guide.style.border = '3px solid #00ff00';
     guide.style.boxShadow = '0 0 0 4000px rgba(0,0,0,0.6)';
     guide.style.pointerEvents = 'none';
@@ -336,30 +341,51 @@ async function startOCR(mode = 'full') {
         els.scanStatus.innerHTML = '緑の枠内に<b>「GS1コードとその上下の数字すべて」</b>を収め、「撮影」ボタンを押してください。';
         els.scanStatus.style.color = 'var(--primary-color)';
         
-        // Add Capture Button (明るい青色に戻し、透過しないよう設定)
+        // Add Capture Button (カメラ枠の外側、スキャン停止ボタンの横に配置)
+        const existingBtn = document.getElementById('capture-btn');
+        if (existingBtn) existingBtn.remove();
+        
         const captureBtn = document.createElement('button');
-        captureBtn.className = 'btn btn-large btn-primary';
-        captureBtn.style.marginTop = '15px';
-        captureBtn.style.position = 'relative'; // 影の上に配置
-        captureBtn.style.zIndex = '100'; // 影の上に配置
+        captureBtn.id = 'capture-btn';
+        captureBtn.className = 'btn btn-primary';
         captureBtn.style.color = '#ffffff';
+        captureBtn.style.fontWeight = 'bold';
         captureBtn.textContent = '📸 撮影';
+        
+        const btnGroup = document.querySelector('.button-group');
+        btnGroup.insertBefore(captureBtn, els.btnStopScan);
+
         captureBtn.onclick = async () => {
             captureBtn.disabled = true;
             els.scanStatus.textContent = '文字認識(OCR)を実行中...数秒かかります';
             showLoader('画像から文字を抽出中...');
             
-            const canvas = document.createElement('canvas');
-            // ガイド枠に合わせてクロップ (横80%、縦24%、上から38%、左から10%)
-            const cropWidth = video.videoWidth * 0.8;
-            const cropHeight = video.videoHeight * 0.24;
-            const sx = video.videoWidth * 0.1;
-            const sy = video.videoHeight * 0.38;
+            // 実際の動画サイズと表示上のサイズの比率を計算して正確にクロップする
+            const videoRect = video.getBoundingClientRect();
+            const guideRect = guide.getBoundingClientRect();
             
-            canvas.width = cropWidth;
-            canvas.height = cropHeight;
+            const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
+            
+            const displayedWidth = video.videoWidth * scale;
+            const displayedHeight = video.videoHeight * scale;
+            
+            const offsetX = (videoRect.width - displayedWidth) / 2;
+            const offsetY = (videoRect.height - displayedHeight) / 2;
+            
+            // CSSピクセル上のガイド位置を実際の動画ピクセルに変換
+            const guideLeftInVideo = (guideRect.left - videoRect.left) - offsetX;
+            const guideTopInVideo = (guideRect.top - videoRect.top) - offsetY;
+            
+            const sx = guideLeftInVideo / scale;
+            const sy = guideTopInVideo / scale;
+            const sWidth = guideRect.width / scale;
+            const sHeight = guideRect.height / scale;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = sWidth;
+            canvas.height = sHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, sx, sy, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
             
             // --- ここから画像前処理 (精度向上) ---
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -425,8 +451,6 @@ async function startOCR(mode = 'full') {
             els.readerContainer.innerHTML = '<div id="reader"></div>'; // reset
             stopScanner(); // reset buttons
         };
-        
-        els.readerContainer.appendChild(captureBtn);
         
     } catch (err) {
         console.error(err);
