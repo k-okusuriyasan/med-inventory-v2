@@ -319,6 +319,7 @@ async function startOCR(mode = 'full') {
         targetLabel.style.fontWeight = 'bold';
         targetLabel.style.fontSize = '1.1rem';
         targetLabel.style.zIndex = '20';
+        targetLabel.style.whiteSpace = 'nowrap'; // ← 改行を防ぐ
         targetLabel.innerHTML = `期限チェック対象年月日<br>${targetY}年${targetM}月以前`;
         targetLabel.style.textAlign = 'center';
         wrapper.appendChild(targetLabel);
@@ -327,36 +328,19 @@ async function startOCR(mode = 'full') {
         els.readerContainer.appendChild(wrapper);
         els.readerContainer.style.display = 'block';
         
-        // タップでピント調整 (Tap to Focus) - 確実にするため複数のイベントを登録
-        const focusHandler = async (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities();
-            if (capabilities && capabilities.focusMode && capabilities.focusMode.includes('single-shot')) {
-                try {
-                    await track.applyConstraints({
-                        advanced: [{ focusMode: 'single-shot' }]
-                    });
-                    // Visual feedback
-                    guide.style.borderColor = '#ff4757';
-                    setTimeout(() => guide.style.borderColor = '#00ff00', 300);
-                } catch(e) {}
-            }
-        };
-        wrapper.addEventListener('pointerdown', focusHandler);
-        wrapper.addEventListener('touchstart', focusHandler);
-        wrapper.addEventListener('click', focusHandler);
         
         els.btnScanOcr.classList.add('hidden');
         els.btnStopScan.classList.remove('hidden');
         
-        els.scanStatus.innerHTML = '緑の枠内に<b>「GS1コードとその上下の数字すべて」</b>を収め、「撮影」ボタンを押してください。<br>※画面タップでピント調整できます';
+        els.scanStatus.innerHTML = '緑の枠内に<b>「GS1コードとその上下の数字すべて」</b>を収め、「撮影」ボタンを押してください。';
         els.scanStatus.style.color = 'var(--primary-color)';
         
-        // Add Capture Button (「バーコードをスキャン」と同じ色にするためbtn-secondaryを適用)
+        // Add Capture Button (明るい青色に戻し、透過しないよう設定)
         const captureBtn = document.createElement('button');
-        captureBtn.className = 'btn btn-large btn-secondary';
+        captureBtn.className = 'btn btn-large btn-primary';
         captureBtn.style.marginTop = '15px';
+        captureBtn.style.opacity = '1';
+        captureBtn.style.color = '#ffffff';
         captureBtn.textContent = '📸 撮影';
         captureBtn.onclick = async () => {
             captureBtn.disabled = true;
