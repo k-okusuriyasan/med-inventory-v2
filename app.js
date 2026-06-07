@@ -214,8 +214,12 @@ async function fetchMasterData(gs1Code) {
             }
             
             if (targetData) {
-                els.medName.value = targetData[0]; // 配列の0番目が名前
-                els.unit.value = targetData[1];    // 配列の1番目が単位
+                // 圧縮版(配列)と旧版(オブジェクト)の両方に自動対応
+                const name = Array.isArray(targetData) ? targetData[0] : targetData.name;
+                const unit = Array.isArray(targetData) ? targetData[1] : targetData.unit;
+                
+                els.medName.value = name || ''; 
+                els.unit.value = unit || '';    
                 els.gs1Code.value = salesGs1;      // 自動変換
                 
                 els.scanStatus.textContent = 'マスター取得完了！';
