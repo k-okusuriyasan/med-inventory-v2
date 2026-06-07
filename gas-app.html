@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>医薬品期限チェック</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6; --primary-hover: #2563eb;
+            --secondary-color: #8b5cf6; --secondary-hover: #7c3aed;
+            --success-color: #10b981; --success-hover: #059669;
+            --danger-color: #ef4444; --danger-hover: #dc2626;
+            --bg-color: #f1f5f9; --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #1e293b; --text-muted: #64748b; --border-color: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans JP', 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding-bottom: 50px; }
+        .app-header { background: var(--card-bg); padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .app-header h1 { font-size: 1.2rem; font-weight: 700; color: var(--primary-color); }
+        .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.5); }
+        #reader-container { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; background: #000; }
+        .button-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn { flex: 1; min-width: 120px; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: white; text-align: center; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-large { width: 100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem; }
+        .hidden { display: none !important; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background: white; }
+        .form-group input[readonly] { background: #f8fafc; color: var(--text-muted); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .highlight-box { background: #fef2f2; padding: 1rem; border-radius: 8px; border: 1px solid #fca5a5; }
+        .highlight-box label { color: var(--danger-color); }
+        .highlight-box input { background: transparent; border: none; font-weight: 700; color: var(--danger-color); font-size: 1.2rem; padding: 0; }
+        .status-message { margin-top: 0.5rem; font-size: 0.85rem; text-align: center; min-height: 1.2rem; color: var(--primary-color); font-weight: 500; }
+        .loader-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <h1>医薬品期限チェック</h1>
+    </header>
+
+    <main class="container">
+        <!-- Scanner Section -->
+        <section class="card" id="scanner-section">
+            <div id="reader-container">
+                <div id="reader"></div>
+            </div>
+            <div class="button-group">
+                <button id="btn-scan-barcode" class="btn btn-primary">バーコードをスキャン</button>
+                <button id="btn-scan-ocr" class="btn btn-secondary">文字(OCR)で読み取る</button>
+                <button id="btn-stop-scan" class="btn btn-danger hidden">スキャン停止</button>
+            </div>
+            <div id="scan-status" class="status-message"></div>
+        </section>
+
+        <!-- Result Form Section -->
+        <section class="card form-section" id="form-section">
+            <h2>読み取り結果・入力</h2>
+            <form id="med-form">
+                <div class="form-group">
+                    <label>GS1コード (14桁)</label>
+                    <input type="text" id="gs1-code" readonly>
+                </div>
+                <div class="form-group">
+                    <label>医薬品名</label>
+                    <input type="text" id="med-name" readonly placeholder="マスターから自動取得">
+                </div>
+                <div class="form-group two-col">
+                    <div>
+                        <label>ロットナンバー</label>
+                        <input type="text" id="lot-number" readonly>
+                    </div>
+                    <div>
+                        <label>期限 (年月)</label>
+                        <input type="text" id="exp-date" readonly placeholder="YYMMDD">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>区分フラグ</label>
+                    <select id="category-flag" required>
+                        <option value="通常">通常 (3ヶ月前)</option>
+                        <option value="半錠等">半錠・粉砕・脱カプセル (6ヶ月前)</option>
+                        <option value="移し替え等">他容器移し替え (1ヶ月前)</option>
+                        <option value="経腸栄養剤">経腸栄養剤 (2ヶ月前)</option>
+                    </select>
+                </div>
+                <div class="form-group highlight-box">
+                    <label>廃棄予定日</label>
+                    <input type="text" id="disposal-date" readonly>
+                </div>
+                <div class="form-group two-col">
+                    <div>
+                        <label>棚番</label>
+                        <input type="text" id="shelf-number" placeholder="A-1">
+                    </div>
+                    <div>
+                        <label>数量</label>
+                        <input type="number" id="quantity" step="0.1" value="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>単位</label>
+                    <input type="text" id="unit" readonly placeholder="自動取得">
+                </div>
+                <button type="submit" id="btn-submit" class="btn btn-success btn-large" disabled>スプレッドシートに保存</button>
+            </form>
+        </section>
+    </main>
+
+    <div id="loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loader-text">処理中...</p>
+    </div>
+
+    <script>
+        const els = {
+            btnScanBarcode: document.getElementById('btn-scan-barcode'),
+            btnScanOcr: document.getElementById('btn-scan-ocr'),
+            btnStopScan: document.getElementById('btn-stop-scan'),
+            scanStatus: document.getElementById('scan-status'),
+            readerContainer: document.getElementById('reader-container'),
+            form: document.getElementById('med-form'),
+            gs1Code: document.getElementById('gs1-code'),
+            medName: document.getElementById('med-name'),
+            lotNumber: document.getElementById('lot-number'),
+            expDate: document.getElementById('exp-date'),
+            categoryFlag: document.getElementById('category-flag'),
+            disposalDate: document.getElementById('disposal-date'),
+            shelfNumber: document.getElementById('shelf-number'),
+            quantity: document.getElementById('quantity'),
+            unit: document.getElementById('unit'),
+            btnSubmit: document.getElementById('btn-submit'),
+            loader: document.getElementById('loader'),
+            loaderText: document.getElementById('loader-text')
+        };
+
+        let html5QrcodeScanner = null;
+
+        function showLoader(text = '処理中...') { els.loaderText.textContent = text; els.loader.classList.remove('hidden'); }
+        function hideLoader() { els.loader.classList.add('hidden'); }
+
+        function parseGS1(data) {
+            let cleanData = data.replace(/^\]\w{2}/, '');
+            let result = { gs1: '', exp: '', lot: '' };
+            let pointer = 0;
+            while (pointer < cleanData.length) {
+                let ai = cleanData.substring(pointer, pointer + 2);
+                if (ai === '01') { result.gs1 = cleanData.substring(pointer + 2, pointer + 16); pointer += 16; }
+                else if (ai === '17') { result.exp = cleanData.substring(pointer + 2, pointer + 8); pointer += 8; }
+                else if (ai === '10') {
+                    let endPointer = cleanData.indexOf(String.fromCharCode(29), pointer);
+                    if (endPointer === -1) endPointer = cleanData.length;
+                    result.lot = cleanData.substring(pointer + 2, endPointer);
+                    pointer = endPointer + 1;
+                } else if (ai === '21') {
+                    let endPointer = cleanData.indexOf(String.fromCharCode(29), pointer);
+                    if (endPointer === -1) endPointer = cleanData.length;
+                    pointer = endPointer + 1;
+                } else { break; }
+            }
+            return result;
+        }
+
+        function calculateDisposalDate() {
+            const expStr = els.expDate.value;
+            if (!expStr || expStr.length !== 6) return;
+            const yy = parseInt(expStr.substring(0,2)) + 2000;
+            const mm = parseInt(expStr.substring(2,4));
+            let exp = new Date(yy, mm, 0); 
+            const flag = els.categoryFlag.value;
+            let monthsToSubtract = 3;
+            if (flag === '半錠等') monthsToSubtract = 6;
+            else if (flag === '移し替え等') monthsToSubtract = 1;
+            else if (flag === '経腸栄養剤') monthsToSubtract = 2;
+            exp.setMonth(exp.getMonth() - monthsToSubtract);
+            els.disposalDate.value = `${exp.getFullYear()}/${String(exp.getMonth() + 1).padStart(2, '0')}/${String(exp.getDate()).padStart(2, '0')}`;
+        }
+
+        els.categoryFlag.addEventListener('change', calculateDisposalDate);
+
+        function fetchMasterData(gs1Code) {
+            google.script.run.withSuccessHandler((result) => {
+                if (result.success) {
+                    els.medName.value = result.name;
+                    els.unit.value = result.unit;
+                    els.scanStatus.textContent = 'マスター取得完了！';
+                    els.scanStatus.style.color = 'var(--success-color)';
+                    els.btnSubmit.disabled = false;
+                } else {
+                    els.medName.value = '未登録';
+                    els.unit.value = '';
+                    els.scanStatus.textContent = 'マスターに未登録です (手入力可)';
+                    els.scanStatus.style.color = 'var(--danger-color)';
+                    els.medName.readOnly = false;
+                    els.unit.readOnly = false;
+                    els.btnSubmit.disabled = false;
+                }
+                hideLoader();
+            }).withFailureHandler((err) => {
+                els.scanStatus.textContent = '通信エラーが発生しました';
+                hideLoader();
+            }).searchGs1(gs1Code);
+        }
+
+        function handleScanSuccess(decodedText) {
+            stopScanner();
+            els.scanStatus.textContent = '読み取り成功！データを解析中...';
+            const parsed = parseGS1(decodedText);
+            if (!parsed.gs1) {
+                els.scanStatus.textContent = 'GS1データではありません';
+                els.scanStatus.style.color = 'var(--danger-color)';
+                return;
+            }
+            els.gs1Code.value = parsed.gs1;
+            els.expDate.value = parsed.exp;
+            els.lotNumber.value = parsed.lot;
+            calculateDisposalDate();
+            showLoader('マスター照会中...');
+            fetchMasterData(parsed.gs1);
+        }
+
+        function startScanner() {
+            if (html5QrcodeScanner) return;
+            els.readerContainer.style.display = 'block';
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [ Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.CODE_128 ] }, handleScanSuccess, () => {}).catch(err => {
+                alert('カメラの起動に失敗しました。');
+            });
+            els.btnScanBarcode.classList.add('hidden');
+            els.btnScanOcr.classList.add('hidden');
+            els.btnStopScan.classList.remove('hidden');
+            els.scanStatus.textContent = 'バーコードに向けてください';
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); html5QrcodeScanner = null; });
+            }
+            els.btnScanBarcode.classList.remove('hidden');
+            els.btnScanOcr.classList.remove('hidden');
+            els.btnStopScan.classList.add('hidden');
+        }
+
+        els.btnScanBarcode.addEventListener('click', startScanner);
+        els.btnStopScan.addEventListener('click', stopScanner);
+
+        async function startOCR() {
+            els.scanStatus.textContent = 'OCRカメラを準備中...';
+            const video = document.createElement('video');
+            video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                els.readerContainer.innerHTML = '';
+                els.readerContainer.appendChild(video);
+                els.readerContainer.style.display = 'block';
+                els.btnScanBarcode.classList.add('hidden');
+                els.btnScanOcr.classList.add('hidden');
+                els.btnStopScan.classList.remove('hidden');
+                
+                const captureBtn = document.createElement('button');
+                captureBtn.className = 'btn btn-secondary btn-large';
+                captureBtn.textContent = '撮影して文字解析';
+                captureBtn.onclick = async () => {
+                    captureBtn.disabled = true;
+                    showLoader('文字を抽出中(数秒かかります)...');
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    try {
+                        const worker = await Tesseract.createWorker("eng");
+                        await worker.setParameters({ tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz() ' });
+                        const result = await worker.recognize(canvas);
+                        await worker.terminate();
+                        parseOcrText(result.data.text);
+                    } catch (err) { els.scanStatus.textContent = 'OCRエラー'; }
+                    hideLoader();
+                    els.readerContainer.innerHTML = '<div id="reader"></div>';
+                    stopScanner();
+                };
+                els.readerContainer.appendChild(captureBtn);
+            } catch (err) { alert('カメラ起動失敗'); }
+        }
+
+        function parseOcrText(text) {
+            let cleanText = text.replace(/[\s\r\n]+/g, '');
+            let gs1Match = cleanText.match(/(?:\(01\)|01)(\d{14})/);
+            let expMatch = cleanText.match(/(?:\(17\)|17)(\d{6})/);
+            let lotMatch = cleanText.match(/(?:\(10\)|10)([A-Za-z0-9]+)/);
+            
+            let gs1 = gs1Match ? gs1Match[1] : (cleanText.match(/\b\d{14}\b/) ? cleanText.match(/\b\d{14}\b/)[0] : '');
+            let exp = expMatch ? expMatch[1] : (cleanText.match(/\b\d{6}\b/) ? cleanText.match(/\b\d{6}\b/)[0] : '');
+            let lot = lotMatch ? lotMatch[1] : '';
+
+            if (!gs1) {
+                els.scanStatus.textContent = 'OCR失敗。手入力してください。';
+                els.gs1Code.readOnly = false; els.expDate.readOnly = false; els.lotNumber.readOnly = false;
+                return;
+            }
+            els.gs1Code.value = gs1;
+            if (exp) els.expDate.value = exp;
+            if (lot) els.lotNumber.value = lot;
+            calculateDisposalDate();
+            showLoader('マスター照会中...');
+            fetchMasterData(gs1);
+        }
+
+        els.btnScanOcr.addEventListener('click', startOCR);
+
+        els.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const record = {
+                timestamp: new Date().toLocaleString('ja-JP'),
+                gs1: els.gs1Code.value,
+                name: els.medName.value,
+                lot: els.lotNumber.value,
+                expDate: els.expDate.value,
+                disposalDate: els.disposalDate.value,
+                shelf: els.shelfNumber.value,
+                quantity: els.quantity.value,
+                unit: els.unit.value,
+                category: els.categoryFlag.value
+            };
+            showLoader('保存中...');
+            google.script.run.withSuccessHandler((res) => {
+                if (res.success) {
+                    alert('保存しました！');
+                    els.form.reset();
+                    els.btnSubmit.disabled = true;
+                    els.scanStatus.textContent = '次をスキャンしてください';
+                } else { alert('エラー: ' + res.message); }
+                hideLoader();
+            }).withFailureHandler((err) => {
+                alert('通信エラー');
+                hideLoader();
+            }).saveData(record);
+        });
+    </script>
+</body>
+</html>

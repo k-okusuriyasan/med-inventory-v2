@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MediDate</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Tesseract.js -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <h1>MediDate</h1>
+        <div id="status-indicator" class="status-offline"></div>
+    </header>
+
+    <main class="container">
+        <!-- Scanner Section -->
+        <section class="card" id="scanner-section">
+            <div id="reader-container">
+                <div id="reader"></div>
+            </div>
+            <div class="button-group">
+                <button id="btn-scan-ocr" class="btn btn-secondary">バーコードをスキャン</button>
+                <button id="btn-stop-scan" class="btn btn-danger hidden">スキャン停止</button>
+            </div>
+            <div id="scan-status" class="status-message"></div>
+        </section>
+
+        <!-- Result Form Section -->
+        <section class="card form-section" id="form-section">
+            <h2>読み取り結果・入力</h2>
+            <form id="med-form">
+                
+                <div class="form-group">
+                    <label>GS1コード (14桁)</label>
+                    <input type="text" id="gs1-code">
+                </div>
+                
+                <div class="form-group">
+                    <label>医薬品名</label>
+                    <input type="text" id="med-name" placeholder="マスターから自動取得">
+                </div>
+
+                <div class="form-group two-col">
+                    <div>
+                        <label>ロットナンバー</label>
+                        <input type="text" id="lot-number">
+                    </div>
+                    <div>
+                        <label>期限 (年月)</label>
+                        <input type="month" id="exp-date">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>区分フラグ (自動計算用)</label>
+                    <select id="category-flag" required>
+                        <option value="通常">通常 (3ヶ月前)</option>
+                        <option value="半錠等">半錠・粉砕・脱カプセル (6ヶ月前)</option>
+                        <option value="移し替え等">他容器移し替え/風邪・抗ウイルス (1ヶ月前)</option>
+                        <option value="経腸栄養剤">経腸栄養剤 (2ヶ月前)</option>
+                    </select>
+                </div>
+
+                <div class="form-group highlight-box">
+                    <label>廃棄予定日</label>
+                    <input type="text" id="disposal-date" readonly>
+                </div>
+
+                <div class="form-group two-col">
+                    <div>
+                        <label>棚番</label>
+                        <input type="text" id="shelf-number" placeholder="例: A-1">
+                    </div>
+                    <div>
+                        <label>数量</label>
+                        <input type="number" id="quantity" step="0.1" value="1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>単位</label>
+                    <input type="text" id="unit" placeholder="マスターから自動取得">
+                </div>
+
+                <button type="submit" id="btn-submit" class="btn btn-success btn-large">スプレッドシートに保存</button>
+            </form>
+        </section>
+    </main>
+
+    <!-- Overlay Loader -->
+    <div id="loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loader-text">処理中...</p>
+    </div>
+
+    <!-- Configuration Modal -->
+    <button id="btn-settings" class="settings-fab">⚙️</button>
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>設定</h3>
+            <div class="form-group">
+                <label>GAS Webhook URL</label>
+                <input type="password" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
+                <small>※ スプレッドシート連携用のURLを入力してください</small>
+            </div>
+            <div class="form-group">
+                <label>合言葉 (シークレットトークン)</label>
+                <input type="password" id="secret-token" placeholder="GASで設定した合言葉">
+            </div>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid #ccc;">
+            <div class="form-group">
+                <button id="btn-sync-master" class="btn btn-secondary btn-large">マスターデータをダウンロード (手動更新)</button>
+                <small id="sync-status" style="display:block; margin-top:5px; color:var(--text-muted);"></small>
+            </div>
+            <div class="button-group">
+                <button id="btn-save-settings" class="btn btn-primary">保存して閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
