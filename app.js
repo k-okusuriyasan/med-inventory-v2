@@ -202,18 +202,27 @@ async function fetchMasterData(gs1Code) {
     const cachedData = localStorage.getItem('masterData');
     if (cachedData) {
         const masterData = JSON.parse(cachedData);
-        if (masterData[gs1Code]) {
-            els.medName.value = masterData[gs1Code].name;
-            els.unit.value = masterData[gs1Code].unit;
-            // 調剤包装単位をスキャンした場合でも、自動的に販売包装単位のGS1コードに置き換える
-            if (masterData[gs1Code].salesGs1) {
-                els.gs1Code.value = masterData[gs1Code].salesGs1;
+        let targetData = masterData[gs1Code];
+        
+        if (targetData) {
+            let salesGs1 = gs1Code;
+            
+            // もし値が文字列なら、それは調剤コードから販売コードへの「リンク」なので、リンク先を読み込む
+            if (typeof targetData === 'string') {
+                salesGs1 = targetData;
+                targetData = masterData[salesGs1];
             }
             
-            els.scanStatus.textContent = 'マスター取得完了！';
-            els.scanStatus.style.color = 'var(--success-color)';
-            els.btnSubmit.disabled = false;
-            return;
+            if (targetData) {
+                els.medName.value = targetData[0]; // 配列の0番目が名前
+                els.unit.value = targetData[1];    // 配列の1番目が単位
+                els.gs1Code.value = salesGs1;      // 自動変換
+                
+                els.scanStatus.textContent = 'マスター取得完了！';
+                els.scanStatus.style.color = 'var(--success-color)';
+                els.btnSubmit.disabled = false;
+                return;
+            }
         }
     }
     
