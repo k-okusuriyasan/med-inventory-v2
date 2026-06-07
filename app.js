@@ -204,6 +204,12 @@ async function fetchMasterData(gs1Code) {
         const masterData = JSON.parse(cachedData);
         let targetData = masterData[gs1Code];
         
+        // 【重要】マスターデータの調剤コードが13桁（先頭の0がない状態）で登録されている場合の対策
+        // 読み取ったコードが14桁で、かつ先頭が '0' の場合、先頭の '0' を除いた13桁でも検索を試す
+        if (!targetData && gs1Code.length === 14 && gs1Code.startsWith('0')) {
+            targetData = masterData[gs1Code.substring(1)];
+        }
+        
         if (targetData) {
             let salesGs1 = gs1Code;
             
