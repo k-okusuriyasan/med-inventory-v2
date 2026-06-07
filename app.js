@@ -281,6 +281,7 @@ async function startOCR(mode = 'full') {
     wrapper.style.position = 'relative';
     wrapper.style.width = '100%';
     wrapper.style.backgroundColor = '#000';
+    wrapper.style.overflow = 'hidden'; // 影がボタンにはみ出すのを防ぐ
     
     // 読み取りガイド枠 (中央横長) - 範囲を少し狭める
     const guide = document.createElement('div');
@@ -339,7 +340,8 @@ async function startOCR(mode = 'full') {
         const captureBtn = document.createElement('button');
         captureBtn.className = 'btn btn-large btn-primary';
         captureBtn.style.marginTop = '15px';
-        captureBtn.style.opacity = '1';
+        captureBtn.style.position = 'relative'; // 影の上に配置
+        captureBtn.style.zIndex = '100'; // 影の上に配置
         captureBtn.style.color = '#ffffff';
         captureBtn.textContent = '📸 撮影';
         captureBtn.onclick = async () => {
