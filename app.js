@@ -94,7 +94,8 @@ els.btnSyncMaster.addEventListener('click', async () => {
         }
     } catch (e) {
         console.error(e);
-        els.syncStatus.textContent = '通信エラーが発生しました';
+        // エラーの正体を画面に表示する
+        els.syncStatus.textContent = `通信エラーの詳細: [${e.name}] ${e.message}`;
         els.syncStatus.style.color = 'var(--danger-color)';
     }
     els.btnSyncMaster.disabled = false;
@@ -598,7 +599,7 @@ els.form.addEventListener('submit', async (e) => {
         }
     } catch (err) {
         console.error(err);
-        alert('通信エラーが発生しました。ネットワークを確認してください。');
+        alert(`通信エラーの詳細: [${err.name}] ${err.message}`);
     }
     hideLoader();
 });
