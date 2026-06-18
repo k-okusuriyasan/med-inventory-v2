@@ -54,8 +54,10 @@ if (gasWebhookUrl) {
 // Settings Handlers
 els.btnSettings.addEventListener('click', () => els.settingsModal.classList.remove('hidden'));
 els.btnSaveSettings.addEventListener('click', () => {
-    const url = els.gasUrlInput.value.trim();
-    const token = els.secretTokenInput.value.trim();
+    // .trim() だけでなく、文字列の途中にある改行(\n)やスペースも全て強制的に削除する
+    const url = els.gasUrlInput.value.replace(/\s+/g, '');
+    const token = els.secretTokenInput.value.replace(/\s+/g, '');
+    
     if (url) {
         localStorage.setItem('gasWebhookUrl', url);
         localStorage.setItem('secretToken', token);
@@ -85,7 +87,8 @@ els.btnSyncMaster.addEventListener('click', async () => {
         });
         const result = await response.json();
         if (result.success) {
-            localStorage.setItem('masterData', JSON.stringify(result.data));
+            // 容量制限(5MB)を突破できる IndexedDB (localForage) を使用して保存
+            await localforage.setItem('masterData', result.data);
             els.syncStatus.textContent = `完了: ${Object.keys(result.data).length}件の医薬品を保存しました`;
             els.syncStatus.style.color = 'var(--success-color)';
         } else {
@@ -200,9 +203,10 @@ els.gs1Code.addEventListener('blur', () => {
 
 // Fetch Master Data from Local Cache (Instant)
 async function fetchMasterData(gs1Code) {
-    const cachedData = localStorage.getItem('masterData');
-    if (cachedData) {
-        const masterData = JSON.parse(cachedData);
+    // 容量無制限の IndexedDB から直接オブジェクトとして取得
+    const masterData = await localforage.getItem('masterData');
+    
+    if (masterData) {
         let targetData = masterData[gs1Code];
         
         // 【重要】マスターデータの調剤コードが13桁（先頭の0がない状態）で登録されている場合の対策
@@ -240,7 +244,7 @@ async function fetchMasterData(gs1Code) {
     // Not found in cache
     els.medName.value = '';
     els.unit.value = '';
-    if (!cachedData) {
+    if (!masterData) {
         els.scanStatus.textContent = 'マスターデータが同期されていません。設定からダウンロードしてください。';
     } else {
         els.scanStatus.textContent = 'マスターに未登録です (手入力可)';
