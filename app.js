@@ -181,10 +181,10 @@ function calculateDisposalDate() {
 
     let baseDateStr = '';
     
-    if (flag.includes('【６カ月未満】半錠') || 
-        flag.includes('【１カ月未満】他容器移し替え') || 
-        flag.includes('【１週間】開封後精製水') || 
-        flag.includes('【１日】滅菌精製水')) {
+    if (flag.includes('【６カ月後】半錠') || 
+        flag.includes('【１カ月後】他容器移し替え') || 
+        flag.includes('【１週間後】開封後精製水') || 
+        flag.includes('【１日後】開封後滅菌精製水')) {
         
         elsDynamic.actionDateGroup.style.display = 'block';
         if (flag.includes('精製水')) {
@@ -229,11 +229,15 @@ function calculateDisposalDate() {
         // 期限の2ヶ月前 (当月を含めて3ヶ月)
         target.setMonth(target.getMonth() - 2);
     } 
-    else if (flag.includes('【６カ月未満】半錠')) {
+    else if (flag.includes('【２カ月未満】経腸栄養')) {
+        // 期限の1ヶ月前 (当月を含めて2ヶ月)
+        target.setMonth(target.getMonth() - 1);
+    }
+    else if (flag.includes('【６カ月後】半錠')) {
         // 実施年月から+5ヶ月 (当月を含めて6ヶ月)
         target.setMonth(target.getMonth() + 5);
     }
-    else if (flag.includes('【１カ月未満】他容器移し替え')) {
+    else if (flag.includes('【１カ月後】他容器移し替え')) {
         // 実施年月と同じ月
         target.setMonth(target.getMonth() + 0);
     }
@@ -260,55 +264,122 @@ elsDynamic.actionDate.addEventListener('input', calculateDisposalDate);
 const calcModal = document.getElementById('calc-modal');
 const calcExpression = document.getElementById('calc-expression');
 const calcDisplay = document.getElementById('calc-display');
-let calcCurrentVal = '0';
-let calcExpressionStr = '';
-let calcTotal = 0;
-let pendingOp = null;
-
-function applyOp(v) {
-    if (pendingOp === '+') calcTotal += v;
-    else if (pendingOp === '-') calcTotal -= v;
-    else calcTotal = v;
-}
+const btnCalcConfirm = document.getElementById('btn-calc-confirm');
+let calcCurrentVal = '0'; // 現在入力中の数値
+let calcExpressionStr = ''; // 式全体（表示用ではなく計算用: *, / など）
+let calcDisplayStr = ''; // 画面表示用（×, ÷ など）
 
 function updateCalcDisplay() {
-    calcDisplay.textContent = calcCurrentVal;
-    calcExpression.textContent = calcExpressionStr;
+    calcDisplay.textContent = calcCurrentVal || '0';
+    calcExpression.textContent = calcDisplayStr;
 }
 
 els.quantity.addEventListener('click', () => {
-    calcCurrentVal = '0';
+    calcCurrentVal = els.quantity.value || '0';
     calcExpressionStr = '';
-    calcTotal = 0;
-    pendingOp = null;
+    calcDisplayStr = '';
     updateCalcDisplay();
     calcModal.classList.remove('hidden');
+});
+
+// 確定ボタン
+btnCalcConfirm.addEventListener('click', () => {
+    // 確定時に最後に評価する
+    if (calcCurrentVal !== '') {
+        calcExpressionStr += calcCurrentVal;
+        calcDisplayStr += calcCurrentVal;
+    }
+    try {
+        let finalVal = 0;
+        if (calcExpressionStr) {
+            // 安全に評価 (数字と演算子のみ)
+            const sanitized = calcExpressionStr.replace(/[^0-9+\-*/().]/g, '');
+            finalVal = Function('return ' + sanitized)();
+        } else if (calcCurrentVal) {
+            finalVal = parseFloat(calcCurrentVal);
+        }
+        
+        if (!isFinite(finalVal) || isNaN(finalVal)) finalVal = 0;
+        // 丸め誤差対策
+        finalVal = Math.round(finalVal * 1000) / 1000;
+        els.quantity.value = finalVal;
+    } catch (e) {
+        alert('計算式に誤りがあります');
+        return;
+    }
+    calcModal.classList.add('hidden');
 });
 
 document.querySelectorAll('.calc-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const val = btn.dataset.val;
+        const op = btn.dataset.op;
+
         if (val === 'C') {
             calcCurrentVal = '0';
             calcExpressionStr = '';
-            calcTotal = 0;
-            pendingOp = null;
-        } else if (val === 'OK') {
-            applyOp(parseFloat(calcCurrentVal));
-            // Round to 1 decimal place to prevent floating point issues like 1.1000000000000001
-            let finalVal = Math.round(calcTotal * 10) / 10;
-            els.quantity.value = finalVal;
-            calcModal.classList.add('hidden');
-        } else if (val === '+' || val === '-') {
-            applyOp(parseFloat(calcCurrentVal));
-            pendingOp = val;
-            calcExpressionStr += calcCurrentVal + ' ' + val + ' ';
-            calcCurrentVal = '0';
-        } else {
+            calcDisplayStr = '';
+        } 
+        else if (val === 'BS') {
+            if (calcCurrentVal.length > 1) {
+                calcCurrentVal = calcCurrentVal.slice(0, -1);
+            } else {
+                calcCurrentVal = '0';
+            }
+        }
+        else if (val === '=') {
+            if (calcCurrentVal !== '') {
+                calcExpressionStr += calcCurrentVal;
+                calcDisplayStr += calcCurrentVal;
+                calcCurrentVal = '';
+            }
+            try {
+                const sanitized = calcExpressionStr.replace(/[^0-9+\-*/().]/g, '');
+                let result = Function('return ' + sanitized)();
+                if (!isFinite(result) || isNaN(result)) result = 0;
+                result = Math.round(result * 1000) / 1000;
+                calcCurrentVal = String(result);
+                calcExpressionStr = '';
+                calcDisplayStr = '';
+            } catch (e) {
+                calcCurrentVal = 'Error';
+                calcExpressionStr = '';
+                calcDisplayStr = '';
+            }
+        }
+        else if (op) {
+            // 演算子 (+, -, *, /)
+            if (calcCurrentVal !== '') {
+                calcExpressionStr += calcCurrentVal;
+                calcDisplayStr += calcCurrentVal;
+            }
+            calcExpressionStr += op;
+            let displayOp = op;
+            if (op === '*') displayOp = '×';
+            if (op === '/') displayOp = '÷';
+            calcDisplayStr += displayOp;
+            calcCurrentVal = '';
+        }
+        else if (val === '(' || val === ')') {
+            if (calcCurrentVal !== '' && val === '(') {
+                calcExpressionStr += calcCurrentVal + '*';
+                calcDisplayStr += calcCurrentVal + '×';
+                calcCurrentVal = '';
+            } else if (calcCurrentVal !== '' && val === ')') {
+                calcExpressionStr += calcCurrentVal;
+                calcDisplayStr += calcCurrentVal;
+                calcCurrentVal = '';
+            }
+            calcExpressionStr += val;
+            calcDisplayStr += val;
+        }
+        else {
+            // 数字や小数点の入力
             if (calcCurrentVal === '0' && val !== '.') {
                 calcCurrentVal = val;
+            } else if (calcCurrentVal === 'Error') {
+                calcCurrentVal = val;
             } else {
-                // Prevent multiple decimals
                 if (val === '.' && calcCurrentVal.includes('.')) return;
                 calcCurrentVal += val;
             }
@@ -470,18 +541,18 @@ async function startOCR(mode = 'full') {
         
         const targetLabel = document.createElement('div');
         targetLabel.style.position = 'absolute';
-        targetLabel.style.top = '10px';
+        targetLabel.style.top = '5px'; // 少し上に詰める
         targetLabel.style.left = '50%';
         targetLabel.style.transform = 'translateX(-50%)';
         targetLabel.style.backgroundColor = 'rgba(255, 71, 87, 0.9)';
         targetLabel.style.color = 'white';
-        targetLabel.style.padding = '8px 16px';
-        targetLabel.style.borderRadius = '20px';
+        targetLabel.style.padding = '4px 12px'; // 余白を減らす
+        targetLabel.style.borderRadius = '15px';
         targetLabel.style.fontWeight = 'bold';
-        targetLabel.style.fontSize = '1.1rem';
+        targetLabel.style.fontSize = '0.9rem'; // フォントサイズを少し小さく
         targetLabel.style.zIndex = '20';
-        targetLabel.style.whiteSpace = 'nowrap'; // ← 改行を防ぐ
-        targetLabel.innerHTML = `期限チェック対象年月日<br>${targetY}年${targetM}月以前`;
+        targetLabel.style.whiteSpace = 'nowrap';
+        targetLabel.innerHTML = `期限チェック対象: ${targetY}年${targetM}月以前`; // 1行にして高さを抑える
         targetLabel.style.textAlign = 'center';
         wrapper.appendChild(targetLabel);
         

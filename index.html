@@ -69,11 +69,12 @@
                     <label>区分フラグ (自動計算用)</label>
                     <select id="category-flag" required>
                         <option value="【３カ月未満】通常">【３カ月未満】通常</option>
-                        <option value="【６カ月未満】半錠・粉砕・脱カプセル">【６カ月未満】半錠・粉砕・脱カプセル</option>
-                        <option value="【１カ月未満】他容器移し替え">【１カ月未満】他容器移し替え</option>
+                        <option value="【２カ月未満】経腸栄養">【２カ月未満】経腸栄養</option>
+                        <option value="【６カ月後】半錠・粉砕・脱カプセル">【６カ月後】半錠・粉砕・脱カプセル</option>
+                        <option value="【１カ月後】他容器移し替え">【１カ月後】他容器移し替え</option>
                         <option value="【１カ月未満】抗インフルエンザ等">【１カ月未満】抗インフルエンザ薬、抗生剤・抗真菌剤（内服薬）・新型コロナウイルス経口薬、鎮咳剤、去痰剤、鎮咳去痰剤（内服）</option>
-                        <option value="【１週間】開封後精製水">【１週間】開封後精製水</option>
-                        <option value="【１日】滅菌精製水">【１日】滅菌精製水</option>
+                        <option value="【１週間後】開封後精製水">【１週間後】開封後精製水</option>
+                        <option value="【１日後】開封後滅菌精製水">【１日後】開封後滅菌精製水</option>
                         <option value="【同月】薬局医薬品・高度管理等">【同月】薬局医薬品・高度管理医療機器・管理医療機器</option>
                         <option value="【その他】その他">【その他】その他</option>
                     </select>
@@ -148,31 +149,38 @@
 
     <!-- Calculator Modal -->
     <div id="calc-modal" class="modal hidden">
-        <div class="modal-content calc-content" style="max-width: 320px;">
+        <div class="modal-content calc-content" style="max-width: 400px; padding: 15px; border-radius: 20px; background-color: #f2fcfc; display: flex; flex-direction: column; height: 80vh; max-height: 600px;">
             <div class="calc-display-container">
                 <div id="calc-expression"></div>
                 <div id="calc-display">0</div>
             </div>
             <div class="calc-grid">
-                <button type="button" class="calc-btn btn-secondary" data-val="7">7</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="8">8</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="9">9</button>
-                <button type="button" class="calc-btn calc-op" data-val="+">+</button>
+                <button type="button" class="calc-btn btn-cyan" data-val="C">AC</button>
+                <button type="button" class="calc-btn btn-light-purple" data-val="(">(</button>
+                <button type="button" class="calc-btn btn-light-purple" data-val=")">)</button>
+                <button type="button" class="calc-btn btn-light-purple" data-op="/">÷</button>
 
-                <button type="button" class="calc-btn btn-secondary" data-val="4">4</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="5">5</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="6">6</button>
-                <button type="button" class="calc-btn calc-op" data-val="-">-</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="7">7</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="8">8</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="9">9</button>
+                <button type="button" class="calc-btn btn-light-purple" data-op="*">×</button>
 
-                <button type="button" class="calc-btn btn-secondary" data-val="1">1</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="2">2</button>
-                <button type="button" class="calc-btn btn-secondary" data-val="3">3</button>
-                <button type="button" class="calc-btn calc-op" data-val="C">C</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="4">4</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="5">5</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="6">6</button>
+                <button type="button" class="calc-btn btn-light-purple" data-op="-">−</button>
 
-                <button type="button" class="calc-btn btn-secondary" data-val="0" style="grid-column: span 2;">0</button>
-                <button type="button" class="calc-btn btn-secondary" data-val=".">.</button>
-                <button type="button" class="calc-btn calc-action" data-val="OK">確定</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="1">1</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="2">2</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="3">3</button>
+                <button type="button" class="calc-btn btn-light-purple" data-op="+">+</button>
+
+                <button type="button" class="calc-btn btn-light-blue" data-val="0">0</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val=".">.</button>
+                <button type="button" class="calc-btn btn-light-blue" data-val="BS">⌫</button>
+                <button type="button" class="calc-btn btn-dark-purple" data-val="=">=</button>
             </div>
+            <button type="button" id="btn-calc-confirm" class="btn btn-primary" style="margin-top: auto; padding: 15px; font-size: 1.2rem; border-radius: 30px;">入力確定</button>
         </div>
     </div>
 
