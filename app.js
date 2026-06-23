@@ -541,18 +541,18 @@ async function startOCR(mode = 'full') {
         
         const targetLabel = document.createElement('div');
         targetLabel.style.position = 'absolute';
-        targetLabel.style.top = '5px'; // 少し上に詰める
+        targetLabel.style.top = '2px'; // さらに上に詰める
         targetLabel.style.left = '50%';
         targetLabel.style.transform = 'translateX(-50%)';
-        targetLabel.style.backgroundColor = 'rgba(255, 71, 87, 0.9)';
+        targetLabel.style.backgroundColor = 'rgba(255, 71, 87, 0.8)'; // 少し透明度を上げる
         targetLabel.style.color = 'white';
-        targetLabel.style.padding = '4px 12px'; // 余白を減らす
-        targetLabel.style.borderRadius = '15px';
+        targetLabel.style.padding = '2px 8px'; // 余白を最小限に
+        targetLabel.style.borderRadius = '10px';
         targetLabel.style.fontWeight = 'bold';
-        targetLabel.style.fontSize = '0.9rem'; // フォントサイズを少し小さく
+        targetLabel.style.fontSize = '0.75rem'; // フォントサイズを極力小さく
         targetLabel.style.zIndex = '20';
         targetLabel.style.whiteSpace = 'nowrap';
-        targetLabel.innerHTML = `期限チェック対象: ${targetY}年${targetM}月以前`; // 1行にして高さを抑える
+        targetLabel.innerHTML = `期限チェック対象: ${targetY}年${targetM}月以前`; // 1行
         targetLabel.style.textAlign = 'center';
         wrapper.appendChild(targetLabel);
         
