@@ -264,7 +264,7 @@ elsDynamic.actionDate.addEventListener('input', calculateDisposalDate);
 const calcModal = document.getElementById('calc-modal');
 const calcExpression = document.getElementById('calc-expression');
 const calcDisplay = document.getElementById('calc-display');
-const btnCalcConfirm = document.getElementById('btn-calc-confirm');
+const btnCalcClose = document.getElementById('btn-calc-close');
 let calcCurrentVal = '0'; // 現在入力中の数値
 let calcExpressionStr = ''; // 式全体（表示用ではなく計算用: *, / など）
 let calcDisplayStr = ''; // 画面表示用（×, ÷ など）
@@ -282,31 +282,8 @@ els.quantity.addEventListener('click', () => {
     calcModal.classList.remove('hidden');
 });
 
-// 確定ボタン
-btnCalcConfirm.addEventListener('click', () => {
-    // 確定時に最後に評価する
-    if (calcCurrentVal !== '') {
-        calcExpressionStr += calcCurrentVal;
-        calcDisplayStr += calcCurrentVal;
-    }
-    try {
-        let finalVal = 0;
-        if (calcExpressionStr) {
-            // 安全に評価 (数字と演算子のみ)
-            const sanitized = calcExpressionStr.replace(/[^0-9+\-*/().]/g, '');
-            finalVal = Function('return ' + sanitized)();
-        } else if (calcCurrentVal) {
-            finalVal = parseFloat(calcCurrentVal);
-        }
-        
-        if (!isFinite(finalVal) || isNaN(finalVal)) finalVal = 0;
-        // 丸め誤差対策
-        finalVal = Math.round(finalVal * 1000) / 1000;
-        els.quantity.value = finalVal;
-    } catch (e) {
-        alert('計算式に誤りがあります');
-        return;
-    }
+// 閉じるボタン
+btnCalcClose.addEventListener('click', () => {
     calcModal.classList.add('hidden');
 });
 
@@ -328,24 +305,29 @@ document.querySelectorAll('.calc-btn').forEach(btn => {
             }
         }
         else if (val === '=') {
+            // ＝は入力確定とする
             if (calcCurrentVal !== '') {
                 calcExpressionStr += calcCurrentVal;
                 calcDisplayStr += calcCurrentVal;
-                calcCurrentVal = '';
             }
             try {
-                const sanitized = calcExpressionStr.replace(/[^0-9+\-*/().]/g, '');
-                let result = Function('return ' + sanitized)();
-                if (!isFinite(result) || isNaN(result)) result = 0;
-                result = Math.round(result * 1000) / 1000;
-                calcCurrentVal = String(result);
-                calcExpressionStr = '';
-                calcDisplayStr = '';
+                let finalVal = 0;
+                if (calcExpressionStr) {
+                    const sanitized = calcExpressionStr.replace(/[^0-9+\-*/().]/g, '');
+                    finalVal = Function('return ' + sanitized)();
+                } else if (calcCurrentVal) {
+                    finalVal = parseFloat(calcCurrentVal);
+                }
+                
+                if (!isFinite(finalVal) || isNaN(finalVal)) finalVal = 0;
+                finalVal = Math.round(finalVal * 1000) / 1000;
+                els.quantity.value = finalVal;
             } catch (e) {
-                calcCurrentVal = 'Error';
-                calcExpressionStr = '';
-                calcDisplayStr = '';
+                alert('計算式に誤りがあります');
+                return;
             }
+            calcModal.classList.add('hidden');
+            return; // 確定後はここで終了
         }
         else if (op) {
             // 演算子 (+, -, *, /)
@@ -541,18 +523,18 @@ async function startOCR(mode = 'full') {
         
         const targetLabel = document.createElement('div');
         targetLabel.style.position = 'absolute';
-        targetLabel.style.top = '2px'; // さらに上に詰める
+        targetLabel.style.top = '10px'; 
         targetLabel.style.left = '50%';
         targetLabel.style.transform = 'translateX(-50%)';
-        targetLabel.style.backgroundColor = 'rgba(255, 71, 87, 0.8)'; // 少し透明度を上げる
+        targetLabel.style.backgroundColor = 'rgba(255, 71, 87, 0.9)'; 
         targetLabel.style.color = 'white';
-        targetLabel.style.padding = '2px 8px'; // 余白を最小限に
-        targetLabel.style.borderRadius = '10px';
+        targetLabel.style.padding = '6px 14px'; 
+        targetLabel.style.borderRadius = '15px';
         targetLabel.style.fontWeight = 'bold';
-        targetLabel.style.fontSize = '0.75rem'; // フォントサイズを極力小さく
+        targetLabel.style.fontSize = '1.0rem'; // 文字を大きくして見やすくする
         targetLabel.style.zIndex = '20';
         targetLabel.style.whiteSpace = 'nowrap';
-        targetLabel.innerHTML = `期限チェック対象: ${targetY}年${targetM}月以前`; // 1行
+        targetLabel.innerHTML = `期限チェック対象: ${targetY}年${targetM}月以前`; 
         targetLabel.style.textAlign = 'center';
         wrapper.appendChild(targetLabel);
         
