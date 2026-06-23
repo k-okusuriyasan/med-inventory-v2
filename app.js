@@ -156,36 +156,167 @@ function parseGS1(data) {
 }
 
 // Date Calculation (Disposal Date)
+const elsDynamic = {
+    actionDateGroup: document.getElementById('action-date-group'),
+    actionDateLabel: document.getElementById('action-date-label'),
+    actionDate: document.getElementById('action-date'),
+    memoChecks: document.querySelectorAll('input[name="memo-check"], #memo-other-check'),
+    memoOtherCheck: document.getElementById('memo-other-check'),
+    memoOtherText: document.getElementById('memo-other-text')
+};
+
+// Memo Logic
+elsDynamic.memoOtherCheck.addEventListener('change', (e) => {
+    if (e.target.checked) elsDynamic.memoOtherText.classList.remove('hidden');
+    else elsDynamic.memoOtherText.classList.add('hidden');
+});
+
 function calculateDisposalDate() {
-    const expStr = els.expDate.value;
-    if (!expStr || !expStr.includes('-')) return;
+    const flag = els.categoryFlag.value;
     
-    const parts = expStr.split('-');
+    // Reset UI
+    elsDynamic.actionDateGroup.style.display = 'none';
+    els.disposalDate.readOnly = true;
+    els.disposalDate.style.backgroundColor = '#e9ecef'; // readonly gray
+
+    let baseDateStr = '';
+    
+    if (flag.includes('【６カ月未満】半錠') || 
+        flag.includes('【１カ月未満】他容器移し替え') || 
+        flag.includes('【１週間】開封後精製水') || 
+        flag.includes('【１日】滅菌精製水')) {
+        
+        elsDynamic.actionDateGroup.style.display = 'block';
+        if (flag.includes('精製水')) {
+            elsDynamic.actionDateLabel.textContent = '開封年月';
+        } else {
+            elsDynamic.actionDateLabel.textContent = '実施年月';
+        }
+        
+        if (!elsDynamic.actionDate.value) {
+            // Default to current month
+            const today = new Date();
+            elsDynamic.actionDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        }
+        baseDateStr = elsDynamic.actionDate.value;
+        
+    } else {
+        baseDateStr = els.expDate.value;
+    }
+    
+    if (flag.includes('【その他】')) {
+        els.disposalDate.readOnly = false;
+        els.disposalDate.style.backgroundColor = '#ffffff';
+        if(!els.disposalDate.value) {
+            const today = new Date();
+            els.disposalDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        }
+        return; // manual input allowed
+    }
+
+    if (!baseDateStr || !baseDateStr.includes('-')) return;
+    
+    const parts = baseDateStr.split('-');
     if (parts.length !== 2) return;
     
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10);
     
     // Set to 1st day of the month
-    let exp = new Date(y, m - 1, 1); 
+    let target = new Date(y, m - 1, 1); 
 
-    const flag = els.categoryFlag.value;
-    let monthsToSubtract = 3;
-    if (flag === '半錠等') monthsToSubtract = 6;
-    else if (flag === '移し替え等') monthsToSubtract = 1;
-    else if (flag === '経腸栄養剤') monthsToSubtract = 2;
+    if (flag.includes('【３カ月未満】通常')) {
+        // 期限の2ヶ月前 (当月を含めて3ヶ月)
+        target.setMonth(target.getMonth() - 2);
+    } 
+    else if (flag.includes('【６カ月未満】半錠')) {
+        // 実施年月から+5ヶ月 (当月を含めて6ヶ月)
+        target.setMonth(target.getMonth() + 5);
+    }
+    else if (flag.includes('【１カ月未満】他容器移し替え')) {
+        // 実施年月と同じ月
+        target.setMonth(target.getMonth() + 0);
+    }
+    else if (flag.includes('【１カ月未満】抗インフルエンザ等') || flag.includes('【同月】')) {
+        // 期限と同じ月
+        target.setMonth(target.getMonth() + 0);
+    }
+    else if (flag.includes('精製水')) {
+        // 開封月の翌月
+        target.setMonth(target.getMonth() + 1);
+    }
 
-    // 当月を含めるため、引く月数を-1する
-    exp.setMonth(exp.getMonth() - (monthsToSubtract - 1));
-    
-    // Format YYYY/MM
-    const outY = exp.getFullYear();
-    const outM = String(exp.getMonth() + 1).padStart(2, '0');
-    els.disposalDate.value = `${outY}/${outM}`;
+    // Format YYYY-MM
+    const outY = target.getFullYear();
+    const outM = String(target.getMonth() + 1).padStart(2, '0');
+    els.disposalDate.value = `${outY}-${outM}`;
 }
 
 els.categoryFlag.addEventListener('change', calculateDisposalDate);
 els.expDate.addEventListener('input', calculateDisposalDate);
+elsDynamic.actionDate.addEventListener('input', calculateDisposalDate);
+
+// Calculator Logic
+const calcModal = document.getElementById('calc-modal');
+const calcExpression = document.getElementById('calc-expression');
+const calcDisplay = document.getElementById('calc-display');
+let calcCurrentVal = '0';
+let calcExpressionStr = '';
+let calcTotal = 0;
+let pendingOp = null;
+
+function applyOp(v) {
+    if (pendingOp === '+') calcTotal += v;
+    else if (pendingOp === '-') calcTotal -= v;
+    else calcTotal = v;
+}
+
+function updateCalcDisplay() {
+    calcDisplay.textContent = calcCurrentVal;
+    calcExpression.textContent = calcExpressionStr;
+}
+
+els.quantity.addEventListener('click', () => {
+    calcCurrentVal = '0';
+    calcExpressionStr = '';
+    calcTotal = 0;
+    pendingOp = null;
+    updateCalcDisplay();
+    calcModal.classList.remove('hidden');
+});
+
+document.querySelectorAll('.calc-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const val = btn.dataset.val;
+        if (val === 'C') {
+            calcCurrentVal = '0';
+            calcExpressionStr = '';
+            calcTotal = 0;
+            pendingOp = null;
+        } else if (val === 'OK') {
+            applyOp(parseFloat(calcCurrentVal));
+            // Round to 1 decimal place to prevent floating point issues like 1.1000000000000001
+            let finalVal = Math.round(calcTotal * 10) / 10;
+            els.quantity.value = finalVal;
+            calcModal.classList.add('hidden');
+        } else if (val === '+' || val === '-') {
+            applyOp(parseFloat(calcCurrentVal));
+            pendingOp = val;
+            calcExpressionStr += calcCurrentVal + ' ' + val + ' ';
+            calcCurrentVal = '0';
+        } else {
+            if (calcCurrentVal === '0' && val !== '.') {
+                calcCurrentVal = val;
+            } else {
+                // Prevent multiple decimals
+                if (val === '.' && calcCurrentVal.includes('.')) return;
+                calcCurrentVal += val;
+            }
+        }
+        updateCalcDisplay();
+    });
+});
+
 
 // Handle manual GS1 code edits
 els.gs1Code.addEventListener('input', () => {
@@ -300,7 +431,7 @@ async function startOCR(mode = 'full') {
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.style.width = '100%';
-    video.style.height = '300px'; // 縦幅を狭く固定
+    video.style.height = '250px'; // 縦幅をさらに狭く固定（接写防止）
     video.style.objectFit = 'cover'; // 枠に合わせてはみ出した部分を隠す
     video.style.display = 'block';
     
@@ -317,8 +448,8 @@ async function startOCR(mode = 'full') {
     guide.style.top = '50%'; 
     guide.style.left = '50%';
     guide.style.transform = 'translate(-50%, -50%)';
-    guide.style.width = '85%';
-    guide.style.height = '120px'; // バーコードに最適な高さ
+    guide.style.width = '70%'; // 85%から70%に縮小
+    guide.style.height = '90px'; // 120pxから90pxに縮小
     guide.style.border = '3px solid #00ff00';
     guide.style.boxShadow = '0 0 0 4000px rgba(0,0,0,0.6)';
     guide.style.pointerEvents = 'none';
@@ -572,6 +703,22 @@ els.form.addEventListener('submit', async (e) => {
         return;
     }
 
+    if (!els.quantity.value || parseFloat(els.quantity.value) <= 0) {
+        alert('数量を入力してください');
+        return;
+    }
+
+    // Build Memo String
+    let memoArr = [];
+    elsDynamic.memoChecks.forEach(chk => {
+        if (chk.checked) memoArr.push(chk.value);
+    });
+    let memoStr = memoArr.join('、');
+    if (elsDynamic.memoOtherCheck.checked) {
+        let txt = elsDynamic.memoOtherText.value.trim();
+        if(txt) memoStr += `(${txt})`;
+    }
+
     const record = {
         timestamp: new Date().toLocaleString('ja-JP'),
         gs1: els.gs1Code.value,
@@ -582,7 +729,8 @@ els.form.addEventListener('submit', async (e) => {
         shelf: els.shelfNumber.value,
         quantity: els.quantity.value,
         unit: els.unit.value,
-        category: els.categoryFlag.value
+        category: els.categoryFlag.value,
+        memo: memoStr
     };
 
     showLoader('スプレッドシートに保存中...');

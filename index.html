@@ -60,19 +60,28 @@
                     </div>
                 </div>
 
+                <div class="form-group highlight-box" id="action-date-group" style="display:none; background-color: #fff3cd; border-color: #ffeeba;">
+                    <label id="action-date-label">実施年月</label>
+                    <input type="month" id="action-date">
+                </div>
+
                 <div class="form-group">
                     <label>区分フラグ (自動計算用)</label>
                     <select id="category-flag" required>
-                        <option value="通常">通常 (3ヶ月前)</option>
-                        <option value="半錠等">半錠・粉砕・脱カプセル (6ヶ月前)</option>
-                        <option value="移し替え等">他容器移し替え/風邪・抗ウイルス (1ヶ月前)</option>
-                        <option value="経腸栄養剤">経腸栄養剤 (2ヶ月前)</option>
+                        <option value="【３カ月未満】通常">【３カ月未満】通常</option>
+                        <option value="【６カ月未満】半錠・粉砕・脱カプセル">【６カ月未満】半錠・粉砕・脱カプセル</option>
+                        <option value="【１カ月未満】他容器移し替え">【１カ月未満】他容器移し替え</option>
+                        <option value="【１カ月未満】抗インフルエンザ等">【１カ月未満】抗インフルエンザ薬、抗生剤・抗真菌剤（内服薬）・新型コロナウイルス経口薬、鎮咳剤、去痰剤、鎮咳去痰剤（内服）</option>
+                        <option value="【１週間】開封後精製水">【１週間】開封後精製水</option>
+                        <option value="【１日】滅菌精製水">【１日】滅菌精製水</option>
+                        <option value="【同月】薬局医薬品・高度管理等">【同月】薬局医薬品・高度管理医療機器・管理医療機器</option>
+                        <option value="【その他】その他">【その他】その他</option>
                     </select>
                 </div>
 
                 <div class="form-group highlight-box">
-                    <label>廃棄予定日</label>
-                    <input type="text" id="disposal-date" readonly>
+                    <label>廃棄予定年月</label>
+                    <input type="month" id="disposal-date" readonly style="background-color: #e9ecef;">
                 </div>
 
                 <div class="form-group two-col">
@@ -81,14 +90,24 @@
                         <input type="text" id="shelf-number" placeholder="例: A-1">
                     </div>
                     <div>
-                        <label>数量</label>
-                        <input type="number" id="quantity" step="0.1" value="1">
+                        <label>数量 <span style="color:var(--danger-color);font-size:0.8rem;">*</span></label>
+                        <input type="text" id="quantity" placeholder="タップして入力" readonly required style="cursor: pointer; background-color: #fff;">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>単位</label>
                     <input type="text" id="unit" placeholder="マスターから自動取得">
+                </div>
+
+                <div class="form-group">
+                    <label>メモ (複数選択可)</label>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:10px;">
+                        <label><input type="checkbox" name="memo-check" value="棚上有"> 棚上有</label>
+                        <label><input type="checkbox" name="memo-check" value="バラ有"> バラ有</label>
+                        <label><input type="checkbox" id="memo-other-check" value="その他"> その他</label>
+                    </div>
+                    <input type="text" id="memo-other-text" class="hidden" placeholder="その他のメモを記入">
                 </div>
 
                 <button type="submit" id="btn-submit" class="btn btn-success btn-large">スプレッドシートに保存</button>
@@ -123,6 +142,36 @@
             </div>
             <div class="button-group">
                 <button id="btn-save-settings" class="btn btn-primary">保存して閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator Modal -->
+    <div id="calc-modal" class="modal hidden">
+        <div class="modal-content calc-content" style="max-width: 320px;">
+            <div class="calc-display-container">
+                <div id="calc-expression"></div>
+                <div id="calc-display">0</div>
+            </div>
+            <div class="calc-grid">
+                <button type="button" class="calc-btn btn-secondary" data-val="7">7</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="8">8</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="9">9</button>
+                <button type="button" class="calc-btn calc-op" data-val="+">+</button>
+
+                <button type="button" class="calc-btn btn-secondary" data-val="4">4</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="5">5</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="6">6</button>
+                <button type="button" class="calc-btn calc-op" data-val="-">-</button>
+
+                <button type="button" class="calc-btn btn-secondary" data-val="1">1</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="2">2</button>
+                <button type="button" class="calc-btn btn-secondary" data-val="3">3</button>
+                <button type="button" class="calc-btn calc-op" data-val="C">C</button>
+
+                <button type="button" class="calc-btn btn-secondary" data-val="0" style="grid-column: span 2;">0</button>
+                <button type="button" class="calc-btn btn-secondary" data-val=".">.</button>
+                <button type="button" class="calc-btn calc-action" data-val="OK">確定</button>
             </div>
         </div>
     </div>
