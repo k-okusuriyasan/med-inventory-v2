@@ -14,6 +14,18 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- localForage -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <style>
+        .calc-key {
+            cursor: pointer;
+            touch-action: manipulation; /* タップの遅延と誤判定を防ぐ */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .calc-key:active {
+            filter: brightness(0.85); /* 押した感触をつける */
+        }
+    </style>
 </head>
 <body>
     <header class="app-header">

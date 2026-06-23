@@ -287,6 +287,11 @@ btnCalcClose.addEventListener('click', () => {
     calcModal.classList.add('hidden');
 });
 
+// 電卓上のスワイプで裏の画面がスクロールするのを防ぐ（タップキャンセル防止）
+calcModal.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+}, { passive: false });
+
 document.querySelectorAll('.calc-key').forEach(btn => {
     btn.addEventListener('click', () => {
         const val = btn.dataset.val;
