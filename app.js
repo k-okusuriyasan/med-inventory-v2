@@ -287,7 +287,7 @@ btnCalcClose.addEventListener('click', () => {
     calcModal.classList.add('hidden');
 });
 
-document.querySelectorAll('.calc-btn').forEach(btn => {
+document.querySelectorAll('.calc-key').forEach(btn => {
     btn.addEventListener('click', () => {
         const val = btn.dataset.val;
         const op = btn.dataset.op;

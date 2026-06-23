@@ -149,37 +149,35 @@
 
     <!-- Calculator Modal -->
     <div id="calc-modal" class="modal hidden">
-        <div class="modal-content calc-content" style="max-width: 280px; padding: 15px; border-radius: 12px; background-color: #f8f9fa; position: relative;">
-            <button type="button" id="btn-calc-close" style="position: absolute; top: -10px; right: -10px; background: #666; color: white; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;">×</button>
+        <div class="modal-content" style="max-width: 320px; width: 90vw; padding: 15px; border-radius: 8px; background-color: #f0f0f0; position: relative;">
+            <button type="button" id="btn-calc-close" style="position: absolute; top: -10px; right: -10px; background: #444; color: white; width: 30px; height: 30px; border-radius: 15px; border: 2px solid white; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 0;">×</button>
             
-            <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: right; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
-                <div id="calc-expression" style="font-size: 0.9rem; color: #888; min-height: 1.1rem;"></div>
-                <div id="calc-display" style="font-size: 2rem; font-weight: bold; color: #333;">0</div>
+            <div style="background: white; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: right; border: 1px solid #ccc;">
+                <div id="calc-expression" style="font-size: 0.9rem; color: #666; min-height: 1.1rem;"></div>
+                <div id="calc-display" style="font-size: 1.8rem; font-weight: bold; color: #000; margin-top: 5px;">0</div>
             </div>
             
-            <div class="calc-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="7">7</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="8">8</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="9">9</button>
-                <button type="button" class="btn btn-danger calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px; background-color: #ff4757;" data-val="C">AC</button>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="7">7</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="8">8</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="9">9</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #ffcccc; border: 1px solid #bbb; border-radius: 4px; color: #c00;" data-val="C">AC</button>
 
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="4">4</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="5">5</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="6">6</button>
-                <button type="button" class="btn btn-primary calc-btn" style="font-size: 1.5rem; padding: 10px 0; border-radius: 8px;" data-op="+">＋</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="4">4</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="5">5</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="6">6</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #e0e0ff; border: 1px solid #bbb; border-radius: 4px; color: #00c;" data-op="+">＋</button>
 
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="1">1</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="2">2</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="3">3</button>
-                <button type="button" class="btn btn-primary calc-btn" style="font-size: 1.5rem; padding: 10px 0; border-radius: 8px;" data-op="-">－</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="1">1</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="2">2</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="3">3</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #e0e0ff; border: 1px solid #bbb; border-radius: 4px; color: #00c;" data-op="-">－</button>
 
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val="0">0</button>
-                <button type="button" class="btn btn-secondary calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px;" data-val=".">.</button>
-                <button type="button" class="btn btn-warning calc-btn" style="font-size: 1rem; padding: 10px 0; border-radius: 8px; color: #fff;" data-val="BS">⌫</button>
-                <button type="button" class="btn btn-success calc-btn" style="font-size: 1.2rem; padding: 10px 0; border-radius: 8px; font-weight: bold;" data-val="=">＝</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val="0">0</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; color: #333;" data-val=".">.</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.1rem; background: #ffebcc; border: 1px solid #bbb; border-radius: 4px; color: #c60;" data-val="BS">⌫</button>
+                <button type="button" class="calc-key" style="padding: 12px 0; font-size: 1.2rem; background: #ccffcc; border: 1px solid #bbb; border-radius: 4px; color: #060; font-weight: bold;" data-val="=">＝</button>
             </div>
-            
-            <!-- 下の別ボタンは削除し、＝を確定とする -->
         </div>
     </div>
 
