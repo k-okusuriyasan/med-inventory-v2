@@ -238,8 +238,8 @@ function calculateDisposalDate() {
         target.setMonth(target.getMonth() + 5);
     }
     else if (flag.includes('【１カ月後】他容器移し替え')) {
-        // 実施年月と同じ月
-        target.setMonth(target.getMonth() + 0);
+        // 実施年月の翌月
+        target.setMonth(target.getMonth() + 1);
     }
     else if (flag.includes('【１カ月未満】抗インフルエンザ等') || flag.includes('【同月】')) {
         // 期限と同じ月
@@ -787,7 +787,7 @@ els.form.addEventListener('submit', async (e) => {
         shelf: els.shelfNumber.value,
         quantity: els.quantity.value,
         unit: els.unit.value,
-        category: els.categoryFlag.value,
+        category: els.categoryFlag.value.replace('】', '】\n'),
         memo: memoStr
     };
 
